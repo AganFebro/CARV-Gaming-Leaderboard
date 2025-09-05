@@ -7,333 +7,78 @@
     <title>CARV ID Gaming Leaderboard</title>
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.2/dist/ethers.umd.min.js"></script>
     <style>
-      :root {
-        color-scheme: dark;
-      }
-      body {
-        font-family: "Segoe UI", Roboto, sans-serif;
-        margin: 0;
-        padding: 0;
-        background: #0d0b1a;
-        color: #f3f4f6;
-        display: flex;
-        flex-direction: column;
-        min-height: 100vh;
-      }
-      header {
-        padding: 2rem;
-        text-align: center;
-        background: linear-gradient(135deg, #5b21b6, #7c3aed);
-      }
-      header h1 {
-        margin: 0;
-        font-size: 2rem;
-        font-weight: 800;
-      }
-      header p {
-        margin-top: 0.5rem;
-        color: #d1d5db;
-      }
+      :root { color-scheme: dark; }
+      body { font-family: "Segoe UI", Roboto, sans-serif; margin:0; padding:0; background:#0d0b1a; color:#f3f4f6; display:flex; flex-direction:column; min-height:100vh; }
+      header { padding:2rem; text-align:center; background: linear-gradient(135deg,#5b21b6,#7c3aed); }
+      header h1 { margin:0; font-size:2rem; font-weight:800; }
+      header p { margin-top:.5rem; color:#d1d5db; }
+      .container { flex:1; max-width:1100px; margin:2rem auto; padding:0 1rem; }
+      form { display:flex; justify-content:center; margin-bottom:1.5rem; max-width:720px; margin-left:auto; margin-right:auto; border:1px solid #312e81; border-radius:12px; overflow:hidden; }
+      input[type="text"] { flex:1 1 auto; background:#1f1b2e; border:none; color:#f3f4f6; font-size:16px; padding:.85rem 1rem; outline:none; }
+      button { border:none; background:#7c3aed; color:#fff; padding:.85rem 1.25rem; font-weight:600; cursor:pointer; transition:background .2s; }
+      button:hover { background:#6d28d9; }
+      button:disabled { opacity:.5; cursor:not-allowed; }
+      .summary { text-align:center; font-size:1.05rem; margin:.75rem 0 1.25rem; color:#c4b5fd; }
+      .row { display:grid; grid-template-columns:repeat(auto-fill, minmax(260px,1fr)); gap:1.25rem; align-items:stretch; }
+      .card { background:#1f1b2e; border:1px solid #312e81; border-radius:16px; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 6px 20px rgba(0,0,0,.35); min-height:440px; }
+      .imgwrap { position:relative; aspect-ratio:1/1; overflow:hidden; display:grid; place-items:center; background:#0f1220; }
+      .imgwrap img { width:100%; height:100%; object-fit:cover; display:block; -webkit-user-drag:none; user-select:none; }
+      .spinner { width:28px; height:28px; border:3px solid #4c1d95; border-top-color:#c4b5fd; border-radius:50%; animation:spin 1s linear infinite; }
+      @keyframes spin { to { transform: rotate(360deg); } }
+      .content { flex:1 1 auto; padding:1rem 1rem .75rem; display:flex; flex-direction:column; gap:.5rem; }
+      .name { font-weight:700; }
+      .muted { color:#9ca3af; font-size:.9rem; }
+      .status { font-size:.8rem; font-weight:700; letter-spacing:.3px; display:inline-block; padding:.25rem .5rem; border-radius:999px; }
+      .hold { background:#1e3a8a; color:#bfdbfe; }
+      .nohold { background:#2d1b69; color:#a78bfa; }
 
-      .container {
-        flex: 1;
-        max-width: 1100px;
-        margin: 2rem auto;
-        padding: 0 1rem;
-      }
+      /* NEW: points chip styles */
+      .points { margin-left:.5rem; }
+      .points.yes { background:#14532d; color:#bbf7d0; }  /* held & has Audience/Player */
+      .points.zero { background:#3b0764; color:#e9d5ff; } /* not held or no match */
 
-      /* Wallet form */
-      form {
-        display: flex;
-        justify-content: center;
-        margin-bottom: 1.5rem;
-        max-width: 720px;
-        margin-left: auto;
-        margin-right: auto;
-        border: 1px solid #312e81;
-        border-radius: 12px;
-        overflow: hidden;
-      }
-      input[type="text"] {
-        flex: 1 1 auto;
-        background: #1f1b2e;
-        border: none;
-        color: #f3f4f6;
-        font-size: 16px;
-        padding: 0.85rem 1rem;
-        outline: none;
-      }
-      button {
-        border: none;
-        background: #7c3aed;
-        color: #fff;
-        padding: 0.85rem 1.25rem;
-        font-weight: 600;
-        cursor: pointer;
-        transition: background 0.2s;
-      }
-      button:hover {
-        background: #6d28d9;
-      }
-      button:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-      }
-
-      .summary {
-        text-align: center;
-        font-size: 1.05rem;
-        margin: 0.75rem 0 1.25rem;
-        color: #c4b5fd;
-      }
-
-      .row {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-        gap: 1.25rem;
-        align-items: stretch;
-      }
-
-      .card {
-        background: #1f1b2e;
-        border: 1px solid #312e81;
-        border-radius: 16px;
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
-        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
-        min-height: 440px; /* consistent card height */
-      }
-
-      .imgwrap {
-        position: relative;
-        aspect-ratio: 1 / 1;
-        overflow: hidden;
-        display: grid;
-        place-items: center;
-        background: #0f1220;
-      }
-
-      .imgwrap img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        display: block;
-        -webkit-user-drag: none;
-        user-select: none;
-      }
-
-      .spinner {
-        width: 28px;
-        height: 28px;
-        border: 3px solid #4c1d95;
-        border-top-color: #c4b5fd;
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-      }
-      @keyframes spin {
-        to {
-          transform: rotate(360deg);
-        }
-      }
-
-      .content {
-        flex: 1 1 auto;
-        padding: 1rem 1rem 0.75rem;
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
-      }
-
-      .name {
-        font-weight: 700;
-      }
-      .muted {
-        color: #9ca3af;
-        font-size: 0.9rem;
-      }
-      .status {
-        font-size: 0.8rem;
-        font-weight: 700;
-        letter-spacing: 0.3px;
-        display: inline-block;
-        padding: 0.25rem 0.5rem;
-        border-radius: 999px;
-      }
-      .hold {
-        background: #1e3a8a;
-        color: #bfdbfe;
-      }
-      .nohold {
-        background: #2d1b69;
-        color: #a78bfa;
-      }
-      .grayscale {
-        filter: grayscale(1);
-      }
-      .cardbar {
-        margin-top: auto;
-        padding: 0.75rem 1rem;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        border-top: 1px solid #2a2460;
-        background: linear-gradient(
-          180deg,
-          rgba(42, 36, 96, 0.35),
-          rgba(42, 36, 96, 0.15)
-        );
-      }
-
-      .err {
-        background: #7f1d1d;
-        color: #fecaca;
-        border: 1px solid #991b1b;
-        padding: 0.75rem;
-        border-radius: 10px;
-        margin-top: 1rem;
-        text-align: center;
-      }
+      .grayscale { filter:grayscale(1); }
+      .cardbar { margin-top:auto; padding:.75rem 1rem; display:flex; justify-content:flex-start; gap:.5rem; align-items:center; border-top:1px solid #2a2460; background:linear-gradient(180deg, rgba(42,36,96,.35), rgba(42,36,96,.15)); }
+      .err { background:#7f1d1d; color:#fecaca; border:1px solid #991b1b; padding:.75rem; border-radius:10px; margin-top:1rem; text-align:center; }
 
       /* Leaderboard */
-      .leader {
-        margin-top: 2rem;
-      }
-      .leader h2 {
-        margin: 0 0 0.75rem;
-        font-size: 1.2rem;
-        font-weight: 800;
-        color: #c4b5fd;
-      }
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        background: #141126;
-        border: 1px solid #312e81;
-        border-radius: 12px;
-        overflow: hidden;
-      }
-      thead th {
-        text-align: left;
-        font-weight: 700;
-        color: #c4b5fd;
-        padding: 0.8rem 1rem;
-        background: #1b1538;
-        border-bottom: 1px solid #2a2460;
-      }
-      tbody td {
-        padding: 0.75rem 1rem;
-        border-bottom: 1px solid #221c46;
-      }
-      tbody tr:hover {
-        background: #1b1631;
-        cursor: pointer;
-      }
-      .addr {
-        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-        color: #d1d5db;
-      }
-      .rank {
-        font-weight: 800;
-        color: #a78bfa;
-      }
+      .leader { margin-top:2rem; }
+      .leader h2 { margin:0 0 .75rem; font-size:1.2rem; font-weight:800; color:#c4b5fd; }
+      table { width:100%; border-collapse:collapse; background:#141126; border:1px solid #312e81; border-radius:12px; overflow:hidden; }
+      thead th { text-align:left; font-weight:700; color:#c4b5fd; padding:.8rem 1rem; background:#1b1538; border-bottom:1px solid #2a2460; }
+      tbody td { padding:.75rem 1rem; border-bottom:1px solid #221c46; }
+      tbody tr:hover { background:#1b1631; } /* no pointer */
+      .addr { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color:#d1d5db; }
+      .rank { font-weight:800; color:#a78bfa; }
+      footer { margin-top:auto; text-align:center; padding:1.5rem; font-size:.9rem; color:#9ca3af; border-top:1px solid #312e81; }
 
-      footer {
-        margin-top: auto;
-        text-align: center;
-        padding: 1.5rem;
-        font-size: 0.9rem;
-        color: #9ca3af;
-        border-top: 1px solid #312e81;
-      }
-
-      /* --- Carousel layout (add to your <style> block) --- */
-.carousel {
-  position: relative;
-}
-
-/* Turn #results into a horizontal track */
-#results {
-  display: flex;                 /* was grid */
-  gap: 1rem;                     /* spacing between cards */
-  overflow-x: auto;
-  overflow-y: visible;
-  scroll-snap-type: x mandatory; /* smooth section snapping */
-  padding: 0 .5rem 1rem;
-  scroll-behavior: smooth;
-}
-
-/* Optional: slimmer scrollbar on desktop */
-#results::-webkit-scrollbar { height: 8px; }
-#results::-webkit-scrollbar-thumb { background: #2a2460; border-radius: 99px; }
-
-/* Each card snaps to the start edge and takes 1/4 of the viewport width */
-.card {
-  scroll-snap-align: start;
-  flex: 0 0 calc((100% - 3rem) / 4);   /* 4 per view with 1rem gaps */
-  min-width: calc((100% - 3rem) / 4);
-}
-
-/* Responsiveness: 3 / 2 / 1 per view on narrower screens */
-@media (max-width: 1200px) {
-  .card { flex-basis: calc((100% - 2rem) / 3); min-width: calc((100% - 2rem) / 3); }
-}
-@media (max-width: 900px) {
-  .card { flex-basis: calc((100% - 1rem) / 2); min-width: calc((100% - 1rem) / 2); }
-}
-@media (max-width: 580px) {
-  .card { flex-basis: 100%; min-width: 100%; }
-}
-
-/* Carousel arrows */
-.carousel-btn {
-  position: absolute;
-  top: 40%;
-  transform: translateY(-50%);
-  z-index: 2;
-  width: 44px;
-  height: 44px;
-  border: 1px solid #312e81;
-  background: #1f1b2e;
-  color: #c4b5fd;
-  border-radius: 999px;
-  display: grid;
-  place-items: center;
-  cursor: pointer;
-  box-shadow: 0 6px 20px rgba(0,0,0,.35);
-}
-.carousel-btn:hover { background: #261f48; }
-.carousel-btn:disabled { opacity: .4; cursor: not-allowed; }
-
-.carousel-btn.prev { left: -12px; }
-.carousel-btn.next { right: -12px; }
-
-/* Keep your existing .card styles (height, inner layout) — no changes needed */
-
+      /* Carousel */
+      .carousel { position:relative; }
+      #results { display:flex; gap:1rem; overflow-x:auto; overflow-y:visible; scroll-snap-type:x mandatory; padding:0 .5rem 1rem; scroll-behavior:smooth; }
+      #results::-webkit-scrollbar{ height:8px; } #results::-webkit-scrollbar-thumb{ background:#2a2460; border-radius:99px; }
+      .card { scroll-snap-align:start; flex:0 0 calc((100% - 3rem) / 4); min-width:calc((100% - 3rem) / 4); }
+      @media (max-width:1200px){ .card{ flex-basis:calc((100% - 2rem)/3); min-width:calc((100% - 2rem)/3);} }
+      @media (max-width:900px){ .card{ flex-basis:calc((100% - 1rem)/2); min-width:calc((100% - 1rem)/2);} }
+      @media (max-width:580px){ .card{ flex-basis:100%; min-width:100%; } }
+      .carousel-btn { position:absolute; top:40%; transform:translateY(-50%); z-index:2; width:44px; height:44px; border:1px solid #312e81; background:#1f1b2e; color:#c4b5fd; border-radius:999px; display:grid; place-items:center; cursor:pointer; box-shadow:0 6px 20px rgba(0,0,0,.35); }
+      .carousel-btn:hover{ background:#261f48; } .carousel-btn:disabled{ opacity:.4; cursor:not-allowed; }
+      .carousel-btn.prev{ left:-12px; } .carousel-btn.next{ right:-12px; }
     </style>
   </head>
   <body>
     <header>
       <h1>CARV Indonesia Gaming Leaderboard Challenge</h1>
-      <p>
-        Checker badge game night regional untuk peserta CARV Indonesia Challenge Festival - Gaming Leaderboard.
-      </p>
+      <p>Checker badge game night regional untuk peserta CARV Indonesia Challenge Festival - Gaming Leaderboard.</p>
     </header>
 
     <div class="container">
       <form id="wallet-form">
-        <input
-          id="wallet"
-          type="text"
-          placeholder="Enter wallet address (0x…)"
-          autocomplete="off"
-          required
-        />
+        <input id="wallet" type="text" placeholder="Enter wallet address (0x…)" autocomplete="off" required />
         <button id="go" type="submit" aria-label="Check NFTs">Check</button>
       </form>
 
-      <div id="summary" class="summary" style="display: none"></div>
-      <div id="error" class="err" style="display: none"></div>
+      <div id="summary" class="summary" style="display:none"></div>
+      <div id="error" class="err" style="display:none"></div>
 
       <div id="results" class="row"></div>
 
@@ -342,10 +87,11 @@
         <table>
           <thead>
             <tr>
-              <th style="width: 70px">Rank</th>
+              <th style="width:70px">Rank</th>
               <th>Nama</th>
               <th>Wallet</th>
-              <th style="width: 180px">Total NFT Held</th>
+              <th style="width:160px">Total NFT Held</th>
+              <th style="width:110px">Points</th>
             </tr>
           </thead>
           <tbody id="leader-body"></tbody>
@@ -353,33 +99,17 @@
       </section>
     </div>
 
-    <footer>
-      Made by CARV Indonesia ❤️
-    </footer>
+    <footer>Made by CARV Indonesia ❤️</footer>
 
     <script>
       (function () {
         // ===== Config =====
         const RPC = "https://opbnb-mainnet-rpc.bnbchain.org";
-        const CONTRACT =
-          "0xde50d9f0b51c2f81512455bffdf4144caa58de0d".toLowerCase();
-        const IDS = [11301n, 11302n, 11386n, 	
-11344n, 11082n, 	
-10943n, 	
-11178n,];
+        const CONTRACT = "0xde50d9f0b51c2f81512455bffdf4144caa58de0d".toLowerCase();
+        const IDS = [11387n, 11386n, 11385n, 11384n, 11383n, 11382n];
         const MAX_FETCH_ATTEMPTS = 5;
         const IPFS_GATEWAY = "https://ipfs.io/ipfs/";
-        // Leave empty while testing — leaderboard disabled until set
-        const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRsqw1iEtomN4OKJpWKz62oVtWXqzJsDh309kygook2X3JeWmB8ZGJp_yDVW_44TJ5niOogX95DZZpx/pub?gid=0&single=true&output=csv"; // e.g. https://docs.google.com/spreadsheets/d/<ID>/export?format=csv&gid=<GID>
-
-        if (!window.ethers || !window.ethers.JsonRpcProvider) {
-          const eb = document.getElementById("error");
-          if (eb) {
-            eb.style.display = "block";
-            eb.textContent = "Failed to load ethers.js. Check your connection.";
-          }
-          return;
-        }
+        const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRsqw1iEtomN4OKJpWKz62oVtWXqzJsDh309kygook2X3JeWmB8ZGJp_yDVW_44TJ5niOogX95DZZpx/pub?gid=0&single=true&output=csv";
 
         const { ethers } = window;
         const provider = new ethers.JsonRpcProvider(RPC);
@@ -397,75 +127,48 @@
         const input = document.getElementById("wallet");
         const leaderBody = document.getElementById("leader-body");
 
-        // ----- Carousel wrapper + buttons (layout-only) -----
-(function initCarousel() {
-  const track = document.getElementById('results');
-  if (!track) return;
-
-  // Wrap #results in a positioned container without changing its ID
-  const wrapper = document.createElement('div');
-  wrapper.className = 'carousel';
-  track.parentNode.insertBefore(wrapper, track);
-  wrapper.appendChild(track);
-
-  // Create buttons
-  const mk = (cls, txt) => {
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.className = `carousel-btn ${cls}`;
-    b.setAttribute('aria-label', cls === 'prev' ? 'Previous' : 'Next');
-    b.textContent = txt;
-    return b;
-  };
-  const prevBtn = mk('prev', '‹');
-  const nextBtn = mk('next', '›');
-  wrapper.appendChild(prevBtn);
-  wrapper.appendChild(nextBtn);
-
-  // Scroll by one “page” (almost the visible width)
-  const page = () => Math.max(200, Math.floor(track.clientWidth * 0.9));
-
-  function updateDisabled() {
-    const maxScroll = track.scrollWidth - track.clientWidth - 2; // fudge
-    prevBtn.disabled = track.scrollLeft <= 0;
-    nextBtn.disabled = track.scrollLeft >= maxScroll;
-  }
-
-  prevBtn.addEventListener('click', () => {
-    track.scrollBy({ left: -page(), behavior: 'smooth' });
-  });
-  nextBtn.addEventListener('click', () => {
-    track.scrollBy({ left: page(), behavior: 'smooth' });
-  });
-
-  // Keep buttons state in sync
-  track.addEventListener('scroll', updateDisabled, { passive: true });
-  window.addEventListener('resize', updateDisabled);
-  // Initial state
-  setTimeout(updateDisabled, 0);
-})();
-
+        // Carousel init (unchanged) ...
+        (function initCarousel() {
+          const track = document.getElementById('results');
+          if (!track) return;
+          const wrapper = document.createElement('div');
+          wrapper.className = 'carousel';
+          track.parentNode.insertBefore(wrapper, track);
+          wrapper.appendChild(track);
+          const mk = (cls, txt) => {
+            const b = document.createElement('button');
+            b.type = 'button';
+            b.className = `carousel-btn ${cls}`;
+            b.setAttribute('aria-label', cls === 'prev' ? 'Previous' : 'Next');
+            b.textContent = txt;
+            return b;
+          };
+          const prevBtn = mk('prev', '‹');
+          const nextBtn = mk('next', '›');
+          wrapper.appendChild(prevBtn); wrapper.appendChild(nextBtn);
+          const page = () => Math.max(200, Math.floor(track.clientWidth * 0.9));
+          function updateDisabled() {
+            const maxScroll = track.scrollWidth - track.clientWidth - 2;
+            prevBtn.disabled = track.scrollLeft <= 0;
+            nextBtn.disabled = track.scrollLeft >= maxScroll;
+          }
+          prevBtn.addEventListener('click', () => { track.scrollBy({ left: -page(), behavior: 'smooth' }); });
+          nextBtn.addEventListener('click', () => { track.scrollBy({ left: page(), behavior: 'smooth' }); });
+          track.addEventListener('scroll', updateDisabled, { passive: true });
+          window.addEventListener('resize', updateDisabled);
+          setTimeout(updateDisabled, 0);
+        })();
 
         let leaderboardRows = [];
+        const META_NAME_CACHE = new Map();
 
-        function showError(msg) {
-          errBox.style.display = "block";
-          errBox.textContent = String(msg);
-        }
-        function clearError() {
-          errBox.style.display = "none";
-          errBox.textContent = "";
-        }
+        function showError(msg) { errBox.style.display = "block"; errBox.textContent = String(msg); }
+        function clearError() { errBox.style.display = "none"; errBox.textContent = ""; }
 
-        function hex64(id) {
-          return id.toString(16).toLowerCase().padStart(64, "0");
-        }
-        function hexShort(id) {
-          return id.toString(16).toLowerCase();
-        }
+        function hex64(id) { return id.toString(16).toLowerCase().padStart(64, "0"); }
+        function hexShort(id) { return id.toString(16).toLowerCase(); }
         function toGateway(u) {
-          var path =
-            u.indexOf("ipfs://") === 0 ? u.slice(7).replace(/^ipfs\//, "") : u;
+          var path = u.indexOf("ipfs://") === 0 ? u.slice(7).replace(/^ipfs\//, "") : u;
           return IPFS_GATEWAY + path;
         }
         function expandVariants(rawUri, id) {
@@ -473,82 +176,54 @@
           const h64 = hex64(id);
           const hs = hexShort(id);
           const out = [];
-          function push(s) {
-            if (out.indexOf(s) === -1) out.push(s);
-          }
-          push(
-            rawUri
-              .split("{id}")
-              .join(h64)
-              .split("{ID}")
-              .join(h64)
-              .split("{tokenId}")
-              .join(h64)
-              .split("{tokenID}")
-              .join(h64)
-          );
-          push(
-            rawUri
-              .split("{id}")
-              .join("0x" + h64)
-              .split("{ID}")
-              .join("0x" + h64)
-          );
+          function push(s){ if(out.indexOf(s) === -1) out.push(s); }
+          push(rawUri.split("{id}").join(h64).split("{ID}").join(h64).split("{tokenId}").join(h64).split("{tokenID}").join(h64));
+          push(rawUri.split("{id}").join("0x"+h64).split("{ID}").join("0x"+h64));
           push(rawUri.split("{id}").join(hs).split("{ID}").join(hs));
           push(rawUri.split("{id}").join(idDec).split("{ID}").join(idDec));
-
           if (!/{id}|{ID}|{tokenId}|{tokenID}/.test(rawUri)) {
-            const tails = [
-              h64 + ".json",
-              "0x" + h64 + ".json",
-              hs + ".json",
-              idDec + ".json",
-              h64,
-              "0x" + h64,
-              hs,
-              idDec,
-            ];
-            for (var i = 0; i < tails.length; i++) {
-              var sep = rawUri.endsWith("/") ? "" : "/";
-              push(rawUri + sep + tails[i]);
-            }
+            const tails = [h64+".json","0x"+h64+".json",hs+".json",idDec+".json",h64,"0x"+h64,hs,idDec];
+            for (var i=0;i<tails.length;i++){ var sep = rawUri.endsWith("/") ? "" : "/"; push(rawUri + sep + tails[i]); }
           }
           return out;
         }
-
         async function fetchWithRetries(urls, attempts) {
           const tries = attempts || MAX_FETCH_ATTEMPTS;
           let lastErr = null;
-          for (let a = 1; a <= tries; a++) {
-            for (let i = 0; i < urls.length; i++) {
+          for (let a=1; a<=tries; a++){
+            for (let i=0;i<urls.length;i++){
               const u = urls[i];
               try {
                 const r = await fetch(u);
                 if (!r.ok) throw new Error("HTTP " + r.status);
                 const data = await r.json();
-                return { data: data, url: u, attempt: a };
-              } catch (e) {
-                lastErr = e;
-              }
+                return { data, url: u, attempt: a };
+              } catch(e){ lastErr = e; }
             }
-            await new Promise((res) => setTimeout(res, 200 * a));
+            await new Promise(res => setTimeout(res, 200*a));
           }
           throw lastErr || new Error("Failed to fetch metadata");
         }
 
         function cardSkeleton(id){
-  const div = document.createElement('div');
-  div.className = 'card';
-  div.innerHTML =
-    '<div class="imgwrap"><div class="spinner"></div></div>' +
-    '<div class="content">' +
-      '<div class="name">ID ' + id.toString() + '</div>' +
-      '<div class="muted">Loading…</div>' +
-    '</div>' +
-    '<div class="cardbar"><span class="status nohold">Loading</span></div>';
-  return div;
-}
+          const div = document.createElement('div');
+          div.className = 'card';
+          div.innerHTML =
+            '<div class="imgwrap"><div class="spinner"></div></div>' +
+            '<div class="content">' +
+              '<div class="name">ID ' + id.toString() + '</div>' +
+              '<div class="muted">Loading…</div>' +
+            '</div>' +
+            '<div class="cardbar"><span class="status nohold">Loading</span></div>';
+          return div;
+        }
 
+        function computePtsFromName(name) {
+          const low = (name || "").toLowerCase();
+          if (low.includes("player")) return 2;
+          if (low.includes("audience")) return 1;
+          return 0;
+        }
 
         function updateCard(div, pack) {
           const id = pack.id;
@@ -556,12 +231,11 @@
           const content = div.querySelector(".content");
           imgWrap.innerHTML = "";
           const img = document.createElement("img");
-          img.loading = "lazy";
-          img.decoding = "async";
+          img.loading = "lazy"; img.decoding = "async";
           img.alt = pack.name || "Token " + id.toString();
           img.src = pack.image || "";
-          if (!pack.balance || pack.balance === "0")
-            img.classList.add("grayscale");
+          const held = !!(pack.balance && pack.balance !== "0");
+          if (!held) img.classList.add("grayscale");
           imgWrap.appendChild(img);
 
           content.innerHTML = "";
@@ -571,104 +245,98 @@
           const metaEl = document.createElement("div");
           metaEl.className = "muted";
           metaEl.textContent = "ID " + id.toString();
-          const badge = document.createElement("span");
-          badge.className =
-            "status " +
-            (pack.balance && pack.balance !== "0" ? "hold" : "nohold");
-          badge.textContent =
-            pack.balance && pack.balance !== "0"
-              ? "Held × " + pack.balance
-              : "Not held";
           content.appendChild(nameEl);
           content.appendChild(metaEl);
 
-          // Move the badge into a fixed footer bar so all cards stay equal height
-let bar = div.querySelector('.cardbar');
-if (!bar) {
-  bar = document.createElement('div');
-  bar.className = 'cardbar';
-  div.appendChild(bar);
-}
-bar.innerHTML = '';
-bar.appendChild(badge);
+          // Bottom bar: Held + Points
+          let bar = div.querySelector('.cardbar');
+          if (!bar) { bar = document.createElement('div'); bar.className = 'cardbar'; div.appendChild(bar); }
+          bar.innerHTML = '';
+
+          const heldBadge = document.createElement("span");
+          heldBadge.className = "status " + (held ? "hold" : "nohold");
+          heldBadge.textContent = held ? ("Held × " + pack.balance) : "Not held";
+          bar.appendChild(heldBadge);
+
+          const pts = held ? computePtsFromName(pack.name) : 0;
+          const ptsBadge = document.createElement("span");
+          ptsBadge.className = "status points " + (pts > 0 ? "yes" : "zero");
+          ptsBadge.textContent = "Pts +" + pts;
+          bar.appendChild(ptsBadge);
         }
 
         async function resolveOne(id, owner) {
           const rawUri = await contract.uri(id);
-          const cand = expandVariants(rawUri, id).map(function (u) {
-            return u.indexOf("ipfs://") === 0 ? toGateway(u) : u;
-          });
+          const cand = expandVariants(rawUri, id).map(u => u.indexOf("ipfs://") === 0 ? toGateway(u) : u);
           const resp = await fetchWithRetries(cand, MAX_FETCH_ATTEMPTS);
           const meta = resp.data || {};
           let image = "";
           if (meta && typeof meta.image === "string" && meta.image) {
-            image =
-              meta.image.indexOf("ipfs://") === 0
-                ? toGateway(meta.image)
-                : meta.image;
+            image = meta.image.indexOf("ipfs://") === 0 ? toGateway(meta.image) : meta.image;
           }
           let bal = "0";
-          try {
-            const r = await contract.balanceOf(owner, id);
-            bal = r.toString();
-          } catch (e) {
-            bal = "0";
-          }
-          return { id: id, name: meta.name || "", image: image, balance: bal };
+          try { const r = await contract.balanceOf(owner, id); bal = r.toString(); } catch(e){ bal = "0"; }
+          return { id, name: meta.name || "", image, balance: bal };
         }
 
-        // ===== Leaderboard helpers =====
+        // metadata name preloader
+        async function fetchMetaNameForId(id) {
+          if (META_NAME_CACHE.has(id)) return META_NAME_CACHE.get(id);
+          const rawUri = await contract.uri(id);
+          const cand = expandVariants(rawUri, id).map(u => u.indexOf("ipfs://") === 0 ? toGateway(u) : u);
+          const resp = await fetchWithRetries(cand, MAX_FETCH_ATTEMPTS);
+          const meta = resp.data || {};
+          const name = (meta && typeof meta.name === "string") ? meta.name : "";
+          META_NAME_CACHE.set(id, name);
+          return name;
+        }
+
+        // Leaderboard helpers (unchanged from last version)
         async function fetchWalletsFromCsv() {
           if (!SHEET_CSV_URL) return [];
           try {
             const r = await fetch(SHEET_CSV_URL, { cache: "no-store" });
             if (!r.ok) return [];
             const csv = await r.text();
-            const lines = csv.split(/\r?\n/).filter(function (s) {
-              return s && s.trim().length;
-            });
+            const lines = csv.split(/\r?\n/).filter(s => s && s.trim().length);
             if (!lines.length) return [];
-            const headers = lines[0].split(",").map(function (h) {
-              return h.trim().toLowerCase();
-            });
+            const headers = lines[0].split(",").map(h => h.trim().toLowerCase());
             const idxName = headers.indexOf("name");
             const idxWallet = headers.indexOf("wallet");
             const out = [];
-            for (let i = 1; i < lines.length; i++) {
+            for (let i=1;i<lines.length;i++){
               const cols = lines[i].split(",");
               const rawW = (idxWallet >= 0 ? cols[idxWallet] : cols[0]) || "";
               const rawN = (idxName >= 0 ? cols[idxName] : "") || "";
-              const w = rawW.trim();
-              const n = rawN.trim();
+              const w = rawW.trim(); const n = rawN.trim();
               if (!w) continue;
-              try {
-                out.push({ name: n, wallet: ethers.getAddress(w) });
-              } catch (e) {
-                /* skip invalid */
-              }
+              try { out.push({ name:n, wallet: ethers.getAddress(w) }); } catch(e){ /* skip invalid */ }
             }
             return out;
-          } catch (e) {
-            return [];
-          }
+          } catch(e){ return []; }
         }
 
-        async function totalForWallet(w) {
-          const arr = await Promise.all(
-            IDS.map(async function (id) {
-              try {
-                const r = await contract.balanceOf(w, id);
-                return r.toString();
-              } catch (e) {
-                return "0";
-              }
-            })
-          );
-          let sum = 0;
-          for (let i = 0; i < arr.length; i++) {
-            if (arr[i] !== "0") sum += parseInt(arr[i], 10);
+        async function totalsAndPointsForWallet(w) {
+          let total = 0;
+          let points = 0;
+          const balances = await Promise.all(IDS.map(async (id) => {
+            try { const r = await contract.balanceOf(w, id); return { id, bal: BigInt(r.toString()) }; }
+            catch(e){ return { id, bal: 0n }; }
+          }));
+
+          for (const { id, bal } of balances) {
+            if (bal > 0n) {
+              total += Number(bal);
+              const name = META_NAME_CACHE.has(id) ? META_NAME_CACHE.get(id) : await fetchMetaNameForId(id);
+              points += computePtsFromName(name);
+            }
           }
-          return sum;
+          return { total, points };
+        }
+
+        function maskWallet(addr) {
+          if (!addr || addr.length <= 12) return addr;
+          return addr.slice(0, 5) + "*****" + addr.slice(-5);
         }
 
         function renderLeaderboard(rows) {
@@ -677,55 +345,38 @@ bar.appendChild(badge);
             const row = rows[i];
             const tr = document.createElement("tr");
             tr.innerHTML =
-              '<td class="rank">#' +
-              (i + 1) +
-              "</td>" +
-              "<td>" +
-              (row.name ? row.name : "-") +
-              "</td>" +
-              '<td class="addr">' +
-              row.wallet +
-              "</td>" +
-              "<td>" +
-              row.total +
-              "</td>";
-            tr.addEventListener("click", function () {
-              input.value = row.wallet;
-              form.dispatchEvent(new Event("submit"));
-              window.scrollTo({ top: 0, behavior: "smooth" });
-            });
-            leaderBody.appendChild(tr);
+              '<td class="rank">#' + (i + 1) + "</td>" +
+              "<td>" + (row.name ? row.name : "-") + "</td>" +
+              '<td class="addr">' + maskWallet(row.wallet) + "</td>" +
+              "<td>" + row.total + "</td>" +
+              "<td>" + row.points + "</td>";
+            leaderBody.appendChild(tr); // no click
           }
         }
 
         async function buildLeaderboard() {
           const rows = await fetchWalletsFromCsv();
+          await Promise.all(IDS.map(id => fetchMetaNameForId(id)));
           const enriched = [];
           for (let i = 0; i < rows.length; i++) {
             const row = rows[i];
-            const total = await totalForWallet(row.wallet);
-            enriched.push({ name: row.name, wallet: row.wallet, total: total });
+            const { total, points } = await totalsAndPointsForWallet(row.wallet);
+            enriched.push({ name: row.name, wallet: row.wallet, total, points });
           }
-          enriched.sort(function (a, b) {
-            return b.total - a.total;
-          });
+          enriched.sort((a, b) => (b.points - a.points) || (b.total - a.total));
           leaderboardRows = enriched;
           renderLeaderboard(enriched);
         }
 
-        // ===== Submit handler =====
+        // Submit handler (still shows Total + Points + Rank)
         async function handleSubmit(ev) {
           if (ev && ev.preventDefault) ev.preventDefault();
           clearError();
           summary.style.display = "none";
           const addr = input.value.trim();
           let owner;
-          try {
-            owner = ethers.getAddress(addr);
-          } catch (e) {
-            showError("Invalid wallet address");
-            return;
-          }
+          try { owner = ethers.getAddress(addr); }
+          catch(e){ showError("Invalid wallet address"); return; }
 
           results.innerHTML = "";
           const cards = IDS.map(function (id) {
@@ -745,44 +396,30 @@ bar.appendChild(badge);
                 try {
                   const data = await resolveOne(id, owner);
                   updateCard(cards[myIndex], data);
-                  if (data.balance && data.balance !== "0")
-                    totalHeld += parseInt(data.balance, 10);
+                  if (data.balance && data.balance !== "0") totalHeld += parseInt(data.balance, 10);
                 } catch (e) {
-                  updateCard(cards[myIndex], {
-                    id: id,
-                    name: "(error)",
-                    image: "",
-                    balance: "0",
-                  });
+                  updateCard(cards[myIndex], { id, name: "(error)", image: "", balance: "0" });
                 }
               }
             }
-            await Promise.all(
-              [worker(), worker(), worker()].slice(
-                0,
-                Math.min(concurrency, IDS.length)
-              )
-            );
+            await Promise.all([worker(), worker(), worker()].slice(0, Math.min(concurrency, IDS.length)));
 
-            // rank text
+            const { points } = await totalsAndPointsForWallet(owner);
+
             let rankTxt = "";
             if (leaderboardRows && leaderboardRows.length) {
-              const idx = leaderboardRows.findIndex(function (r) {
-                return r.wallet.toLowerCase() === owner.toLowerCase();
-              });
-              rankTxt =
-                idx >= 0 ? " — Rank #" + (idx + 1) : " — (not on leaderboard)";
+              const idx = leaderboardRows.findIndex(r => r.wallet.toLowerCase() === owner.toLowerCase());
+              rankTxt = idx >= 0 ? " — Rank #" + (idx + 1) : " — (not on leaderboard)";
             }
-            summary.textContent = "Total Badge: " + totalHeld + rankTxt;
+
+            summary.textContent = "Total Badge: " + totalHeld + " — Points: " + points + rankTxt;
             summary.style.display = "block";
-          } catch (e) {
-            showError(e.message || String(e));
-          }
+          } catch (e) { showError(e.message || String(e)); }
         }
 
         form.addEventListener("submit", handleSubmit);
 
-        // Init leaderboard (will be empty if no sheet URL provided)
+        // Init leaderboard
         buildLeaderboard();
       })();
     </script>
